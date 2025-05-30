@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect , useContext, useRef} from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import axios from '../config/axios.js' // Add missing axios import
 import { use } from 'react'
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket.js'
 
+import { UserContext } from '../context/user.context'
 const Project = () => {
     const location = useLocation()
    
@@ -14,6 +15,11 @@ const Project = () => {
     const [users, setUsers] = useState([])
     const [error, setError] = useState('') // Add error state
     const [project, setProject] = useState(location.state.project) // Initialize project state with the passed project
+    const [message, setMessage] = useState('')
+    const messageBox = React.createRef()
+    const { user } = useContext(UserContext);
+    const [ messages, setMessages ] = useState([])
+
     // Fetch users when component mounts
     // useEffect(() => {
     //     // Fetch all users
@@ -79,9 +85,28 @@ const Project = () => {
         });
     }
 
+
+    function send(){
+        sendMessage('project-message', {
+            message,
+            sender: user
+        })
+
+        appendOutgoingMessage({
+            message,
+            sender: user
+        })
+        setMessage("")
+    }
+
     // Add dependency array to prevent infinite re-renders
     useEffect(() => {
         initializeSocket(project._id);
+
+        receiveMessage('project-message', (data) => {
+            console.log('Received message:', data);
+            appendIncomingMessage(data) // Fixed typo
+        })
 
         axios.get(`/projects/get-project/${location.state.project._id}`).then(res => {
             setProject(res.data.project)
@@ -91,6 +116,45 @@ const Project = () => {
             setUsers(res.data.allUsers || [])
         }).catch(err => console.log(err))
     }, [location.state.project._id]) // Add dependency array with project ID
+
+
+    function appendIncomingMessage(messageObject) { // Fixed function name and parameter
+        const messageBox = document.querySelector('.message-box');
+        const newMessage = document.createElement('div'); // Renamed to avoid conflict
+        newMessage.classList.add('message', 'max-w-56','flex', 'flex-col', 'p-2', 'bg-slate-50', 'w-fit', 'rounded-md');
+        newMessage.innerHTML = `
+            <small class='opacity-65 text-xs'>${messageObject.sender.email}</small>
+            <p class='text-sm'>${messageObject.message}</p>
+        `;
+
+        messageBox.appendChild(newMessage);
+        scrollToBottom(); // Call scrollToBottom after appending the new message
+    }
+
+    function appendOutgoingMessage(messageObject) {
+        const messageBox = document.querySelector('.message-box');
+        const newMessage = document.createElement('div');
+        newMessage.classList.add('message', 'ml-auto','max-w-56','flex', 'flex-col', 'p-2', 'bg-slate-50', 'w-fit', 'rounded-md');
+        newMessage.innerHTML = `
+            <small class='opacity-65 text-xs'>${messageObject.sender.email}</small>
+            <p class='text-sm'>${messageObject.message}</p>
+        `;
+
+        messageBox.appendChild(newMessage);
+        scrollToBottom();
+    }
+
+    // Add missing functions
+    function WriteAiMessage(message) {
+        return <p>{message}</p>
+    }
+
+    function scrollToBottom() {
+        const messageBox = document.querySelector('.message-box');
+        if (messageBox) {
+            messageBox.scrollTop = messageBox.scrollHeight;
+        }
+    }
 
     return (
  <main className='h-screen w-screen flex'>
@@ -106,7 +170,7 @@ const Project = () => {
                 </header>
                 <div className="conversation-area pt-14 pb-10 flex-grow flex flex-col h-full relative">
 
-                    {/* <div
+                    <div
                         ref={messageBox}
                         className="message-box p-1 flex-grow flex flex-col gap-1 overflow-auto max-h-full scrollbar-hide">
                         {messages.map((msg, index) => (
@@ -119,9 +183,9 @@ const Project = () => {
                                 </div>
                             </div>
                         ))}
-                    </div> */}
+                    </div>
 
-                    {/* <div className="inputField w-full flex absolute bottom-0">
+                    <div className="inputField w-full flex absolute bottom-0">
                         <input
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
@@ -129,7 +193,7 @@ const Project = () => {
                         <button
                             onClick={send}
                             className='px-5 bg-slate-950 text-white'><i className="ri-send-plane-fill"></i></button>
-                    </div> */}
+                    </div>
                 </div>
                 <div className={`sidePanel w-full h-full flex flex-col gap-2 bg-slate-50 absolute transition-all ${isSidePanelOpen ? 'translate-x-0' : '-translate-x-full'} top-0`}>
                     <header className='flex justify-between items-center px-4 p-2 bg-slate-200'>
