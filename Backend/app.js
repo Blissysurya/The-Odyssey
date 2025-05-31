@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import connect from './db/db.js'
 import userRoutes from './routes/user.routes.js';
 import projectRoutes from './routes/project.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 connect();
@@ -25,6 +26,7 @@ app.use('/users', userRoutes); // Ensure this line exists and is correct
 
 app.use('/projects', projectRoutes); // This should match your frontend usage
 
+app.use('/ai', aiRoutes); // Ensure this line exists and is correct
 
 app.get('/', (req, res) => {
   res.send('Hello World!');

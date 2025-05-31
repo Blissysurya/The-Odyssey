@@ -4,7 +4,8 @@ import 'dotenv/config';
 import {Server} from 'socket.io';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import projectModel from './models/project.model.js; // Assuming you have a project model
+import projectModel from './models/project.model.js'; 
+import { generateResult } from './services/ai.service.js';
 
 const port = process.env.PORT || 3000
 
@@ -55,7 +56,25 @@ io.on('connection', socket => {
 
     socket.join(socket.roomId); // Join the room with the project ID
 
-    socket.on('project-message',data =>{
+    socket.on('project-message',async data =>{
+        const message = data.message;
+
+       const aiIsPresentInMessage = message.includes('@ai') || message.includes('@AI');
+
+       if(aiIsPresentInMessage){
+        const prompt = message.replace('@ai', '') // Remove @ai or @AI and trim the message
+        const result = await generateResult(prompt);
+
+        io.to(socket.roomId).emit('project-message',{
+            message:result,
+            sender:{
+                _id: 'ai',
+                email:'AI'
+            }
+        })
+       }
+
+        console.log('message',data)
         socket.broadcast.to(socket.roomId).emit('project-message',data) 
     })
 

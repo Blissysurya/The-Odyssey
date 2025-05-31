@@ -5,4 +5,18 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(),tailwindcss()],
+  server:{
+    headers:{
+      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Opener-Policy": "same-origin",
+    }
+  },
+  proxy:{
+    '/cdn': {
+      target: 'https://unpkg.com', // Adjust this to your backend URL
+      changeOrigin: true,
+
+      rewrite: (path) => path.replace(/^\/cdn/, ''), // Remove the /api prefix
+    }
+  }
 })
