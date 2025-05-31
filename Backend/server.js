@@ -4,7 +4,7 @@ import 'dotenv/config';
 import {Server} from 'socket.io';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import projectModel from './models/project.model.js'; // Assuming you have a project model
+import projectModel from './models/project.model.js; // Assuming you have a project model
 
 const port = process.env.PORT || 3000
 
@@ -50,14 +50,18 @@ io.use(async (socket,next)=>{
 
 io.on('connection', socket => {
 
+    socket.roomId = socket.project._id.toString(); // Set the room ID to the project ID
     console.log('A user connected:', socket.id);
 
-    socket.join(socket.project._id);
+    socket.join(socket.roomId); // Join the room with the project ID
 
-    // socket.on('project-message',data =>{
-    //     socket.broadcast.to(socket.project._id).emit('project-message'data 
-    // })
+    socket.on('project-message',data =>{
+        socket.broadcast.to(socket.roomId).emit('project-message',data) 
+    })
 
   socket.on('event', data => { /* … */ });
-  socket.on('disconnect', () => { /* … */ });
+  socket.on('disconnect', () => { 
+    console.log('A user disconnected:', socket.id);
+    socket.leave(socket.roomId); // Leave the room when disconnected
+  });
 });
